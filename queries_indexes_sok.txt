@@ -1,0 +1,167 @@
+﻿Селект
+
+--1.Список тем для выбранного языка:
+
+SELECT ID, Name_theam FROM Themes 
+WHERE ID_Language=:ID_Lang(код выбранного языка)
+
+--2.Список групп вопросов по выбанной теме:
+
+SELECT ID, NAME_QUESTION_GROUP FROM Question_groups 
+WHERE ID_theme=:ID_theme(код выбранной темы)
+
+--3.Список вопросов выбранной группы:
+
+SELECT ID, Question FROM Questions 
+WHERE ID_Group=:ID_Group(код выбранной группы)
+
+--4.Перечень подписок на выбранном языке с ценами и длительностью:
+
+SELECT ID, Name_subscription, Cost_subscription, length_subscription 
+FROM Subscriptions WHERE ID_Lang=:ID_Lang(код языка)
+
+--5.Перечень групп вопросов, входящих в подписку:
+
+SELECT Question_groups.ID, Question_groups.NAME_QUESTION_GROUP 
+FROM Content_subscriptions, Question_groups
+WHERE Content_subscriptions.ID_QGroup=Question_groups.ID
+AND Content_subscriptions.ID_subscription=:ID_subscription(код подписки)
+
+--6.Список подписок, купленных выбранным пользователем
+   с датами начала и окончания, ценами:
+
+SELECT Subscriptions.ID, Subscriptions.Name_subscription,
+       Subscriptions.Cost_subscription, Subscriptions.length_subscription
+FROM Subscriptions, User_buys
+WHERE User_buys.ID_subscription=Subscriptions.ID
+AND User_buys.ID_User=:ID_User(код пользователя)
+
+--7.Список отвеченных вопросов купленной подписки 
+   пользователя с ответами:
+
+SELECT Questions.Question, Answers.Answer 
+FROM User_buys, Content_subscriptions, Question_groups, Questions, Answers 
+WHERE Content_subscriptions.ID_QGroup=Question_groups.ID
+AND Content_subscriptions.ID_subscription=User_buys.ID_subscription
+AND Questions.ID_Group=Question_groups.ID
+AND User_buys.ID_subscription=Content_subscriptions.ID_subscription
+AND Answers.ID_Question=Questions.ID
+AND User_buys.ID_subscription=:ID_subscription(код подписки) 
+
+--8.Список снипшотов на купленную подписку
+  для выбранного пользователя (купившего или кому расшарено):
+
+SELECT Subscriptions.Name_subscription, Snipshots.Snipshot_DateTime 
+FROM Snipshots,User_buys,Subscriptions
+WHERE Subscriptions.ID=User_buys.ID_Subscription
+AND Snipshots.ID_Buy=User_buys.ID
+AND Snipshots.ID_Buy=:ID_Buy (код покупки подписки)
+AND Snipshots.ID_User=:ID_User (код пользователя)
+
+--9.Список вопросов-ответов выбранного снипшота:
+
+SELECT Questions.Question, Snipshot_contents.Answer_content 
+FROM Snipshot_contents, Questions
+WHERE Snipshot_contents.Id_Question=Questions.ID
+AND Snipshot_contents.ID_Snipshot=:ID_Snipshot(код снипшота)
+
+--10.Список подписок, доступных пользователю:
+
+SELECT UB.Buy_Date, s.Name_Subscription, U.NAME_USER AS BUYER
+FROM Subscriptions s, Users u, User_buys ub 
+               left join TRUSTS T ON ub.ID=T.ID_BUY 
+                       AND ub.ID_USER=:ID_USER-- (код пользователя)
+WHERE u.ID=ub.ID_USER
+AND ub.ID_Subscription=s.ID
+
+
+=========================================================================
+
+Инсерты
+
+INSERT INTO ANSWERS(ID, ID_QUESTION, ID_BUY, ID_USER, ANSWER)
+VALUES(:ID, :ID_QUESTION, :ID_BUY, :ID_USER, :ANSWER)
+
+INSERT INTO CONTENT_SUBSCRIPTIONS(ID_SUBSCRIPTION, ID_QGROUP)
+VALUES(:ID_SUBSCRIPTION, :ID_QGROUP)
+
+INSERT INTO LANGS(ID, NAME_LANG)
+VALUES(:ID, :NAME_LANG)
+
+INSERT INTO QUESTION_GROUPS(ID, ID_THEME, NAME_QUESTION_GROUP)
+VALUES(:ID, :ID_THEME, :NAME_QUESTION_GROUP)
+
+INSERT INTO QUESTIONS(ID, ID_GROUP, QUESTION)
+VALUES(:ID, :ID_GROUP, :QUESTION)
+
+INSERT INTO SNIPSHOT_CONTENTS(ID_SNIPSHOT, ID_QUESTION, ANSWER_CONTENT)
+VALUES(:ID_SNIPSHOT, :ID_QUESTION, :ANSWER_CONTENT)
+
+INSERT INTO SNIPSHOTS(ID, ID_BUY, ID_USER, SNIPSHOT_DATETIME)
+VALUES(:ID, :ID_BUY, :ID_USER, :SNIPSHOT_DATETIME)
+
+INSERT INTO SUBSCRIPTIONS(ID, ID_LANG, NAME_SUBSCRIPTION, COST_SUBSCRIPTION, LENGTH_SUBSCRIPTION)
+VALUES(:ID, :ID_LANG, :NAME_SUBSCRIPTION, :COST_SUBSCRIPTION, :LENGTH_SUBSCRIPTION)
+
+INSERT INTO THEMES(ID, ID_LANGUAGE, NAME_THEAM)
+VALUES(:ID, :ID_LANGUAGE, :NAME_THEAM)
+
+INSERT INTO TRUSTS(ID_BUY, ID_USER_TRUSTEE)
+VALUES(:ID_BUY, :ID_USER_TRUSTEE)
+
+INSERT INTO USER_BUYS(ID, ID_THEM, ID_USER, ID_SUBSCRIPTION, BUY_DATE)
+VALUES(:ID, :ID_THEM, :ID_USER, :ID_SUBSCRIPTION, :BUY_DATE)
+
+INSERT INTO USERS(ID, USER_NAME, ID_LANGUAGE, LOGIN, PWD)
+VALUES(:ID, :USER_NAME, :ID_LANGUAGE, :LOGIN, :PWD)
+
+
+=====================================================================================================
+
+Индексы
+
+CREATE INDEX T_QUESTIONS_ANSWERS
+ON ANSWERS(ID_QUESTION);
+
+CREATE INDEX T_USERS_ANSWERS
+ON ANSWERS(ID_USER);
+
+CREATE INDEX T_USER_BUYS_ANSWERS
+ON ANSWERS(ID_BUY);
+
+CREATE INDEX T_QGROUPS_CONTENT_SUBSCR
+ON CONTENT_SUBSCRIPTIONS(ID_QGROUP);
+
+CREATE INDEX T_QUESTION_GROUPS_QUESTIONS
+ON QUESTIONS(ID_GROUP);
+
+CREATE INDEX T_THEMES_QUESTION_GROUPS
+ON QUESTION_GROUPS(ID_THEME);
+
+CREATE INDEX T_USER_BUYS_SNIPSHOTS
+ON SNIPSHOTS(ID_BUY);
+
+CREATE INDEX T_USERS_SNIPSHOTS
+ON SNIPSHOTS(ID_USER);
+
+CREATE INDEX T_LANGS_SUBSCRIPTIONS
+ON SUBSCRIPTIONS(ID_LANG);
+
+CREATE INDEX T_LANGS_THEMES
+ON THEMES(ID_LANGUAGE);
+
+CREATE INDEX T_USERS_TRUSTS
+ON TRUSTS(ID_USER_TRUSTEE);
+
+CREATE INDEX T_LANGS_USERS
+ON USERS(ID_LANGUAGE);
+
+CREATE INDEX T_SUBSCRIPTIONS_USER_BUYS
+ON USER_BUYS(ID_SUBSCRIPTION);
+
+CREATE INDEX T_USERS_USER_BUYS
+ON USER_BUYS(ID_USER);
+
+CREATE INDEX TTHEMES_USER_BUYS
+ON USER_BUYS(ID_THEM);
+

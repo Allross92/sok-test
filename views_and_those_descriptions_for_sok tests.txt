@@ -1,0 +1,58 @@
+﻿Важные и повторяющинся джоины идут во вьюхи (виды), чтобы не делать спагети кода в приложении
+и ускорить быстродействие таких запросов
+
+--Это Представление выдает все покупки подписок
+--с указанием языка, темы, покупателя и длительности в днях:
+
+CREATE OR REPLACE FORCE VIEW V_SUBSCRIPTION_BUYS
+(
+   ID,
+   NAME_LANG,
+   NAME_THEAM,
+   BUYER,
+   NAME_SUBSCRIPTION,
+   LENGTH_SUBSCRIPTION
+)
+AS
+   SELECT UB.ID,
+          L.NAME_LANG,
+          T.NAME_THEAM,
+          U.USER_NAME AS BUYER,
+          S.NAME_SUBSCRIPTION,
+          S.LENGTH_SUBSCRIPTION
+     FROM LANGS L,
+          THEMES T,
+          USERS U,
+          SUBSCRIPTIONS S,
+          USER_BUYS UB
+    WHERE     U.ID = UB.ID_USER
+          AND T.ID = UB.ID_THEM
+          AND S.ID = UB.ID_SUBSCRIPTION
+          AND S.ID_LANG = L.ID;
+
+--Запрос, обращающийся к этому Представлению
+--возвращает список покупок подписок с длительностью
+--более 10 дней:
+
+SELECT * FROM V_SUBSCRIPTION_BUYS
+WHERE LENGTH_SUBSCRIPTION>10
+
+
+============================================================================
+
+--показывает все вопросы с темами:
+CREATE OR REPLACE FORCE VIEW V_QUESTIONS
+(
+   NAME_QUESTION_GROUP,
+   QUESTION
+)
+AS
+SELECT QG.NAME_QUESTION_GROUP, Q.QUESTION
+FROM QUESTIONS Q JOIN QUESTION_GROUPS QG ON Q.ID_GROUP = QG.ID;
+  
+--запрос с вью делающий отбор
+--всех вопросов, где встречается слово "пчелы"
+--и отсортированный по группам   
+SELECT * FROM V_QUESTIONS
+WHERE UPPER(QUESTION) LIKE '%ПЧЕЛЫ%' 
+ORDER BY NAME_QUESTION_GROUP
